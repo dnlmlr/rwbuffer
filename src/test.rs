@@ -80,6 +80,46 @@ fn test_rwbuffer_put_get_types() {
 }
 
 #[test]
+fn test_rwbuffer_put_get_le_types() {
+    let mut buf = RwBuffer::new();
+    buf.put_u8(0x01);
+    buf.put_u16_le(0x0203);
+    buf.put_u32_le(0x04050607);
+    buf.put_u64_le(0x08090a0b0c0d0e0f);
+    buf.put_u128_le(0x101112131415161718191a1b1c1d1e1f);
+    buf.put_i8(-0x01);
+    buf.put_i16_le(-0x0203);
+    buf.put_i32_le(-0x04050607);
+    buf.put_i64_le(-0x08090a0b0c0d0e0f);
+    buf.put_i128_le(-0x101112131415161718191a1b1c1d1e1f);
+    buf.put_f32_le(0.1);
+    buf.put_f64_le(0.2);
+
+    assert_eq!(buf.remaining(), 74);
+
+    assert_eq!(buf.get_u8().unwrap(), 0x01);
+    assert_eq!(buf.get_u16_le().unwrap(), 0x0203);
+    assert_eq!(buf.get_u32_le().unwrap(), 0x04050607);
+    assert_eq!(buf.get_u64_le().unwrap(), 0x08090a0b0c0d0e0f);
+    assert_eq!(
+        buf.get_u128_le().unwrap(),
+        0x101112131415161718191a1b1c1d1e1f
+    );
+    assert_eq!(buf.get_i8().unwrap(), -0x01);
+    assert_eq!(buf.get_i16_le().unwrap(), -0x0203);
+    assert_eq!(buf.get_i32_le().unwrap(), -0x04050607);
+    assert_eq!(buf.get_i64_le().unwrap(), -0x08090a0b0c0d0e0f);
+    assert_eq!(
+        buf.get_i128_le().unwrap(),
+        -0x101112131415161718191a1b1c1d1e1f
+    );
+    assert_eq!(buf.get_f32_le().unwrap(), 0.1);
+    assert_eq!(buf.get_f64_le().unwrap(), 0.2);
+
+    assert_eq!(buf.remaining(), 0);
+}
+
+#[test]
 fn test_rwbuffer_read_from() {
     let input: &[u8] = &[5, 12, 56, 84, 1, 57];
     let mut input = Cursor::new(input);
