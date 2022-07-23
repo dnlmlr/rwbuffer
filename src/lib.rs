@@ -266,17 +266,37 @@ impl RwBuffer {
         self.read_index = 0;
     }
 
-    pub fn read_from<T: Read>(&mut self, read: &mut T) -> Result<usize, std::io::Error> {
-        let missing = self.expected_missing();
-        let bytes_read = read.read(&mut self.buf[self.write_index..missing])?;
+    /// Try to read *missing* number of bytes from the given reader. This can read less than the 
+    /// missing number of bytes.
+    pub fn read_from<T: Read>(&mut self, read: &mut T) -> std::io::Result<usize> {
+        let bytes_read = read.read(&mut self.buf[self.write_index..self.expected_len])?;
         self.write_index += bytes_read;
         Ok(bytes_read)
     }
 
-    pub fn write_to<T: Write>(&mut self, write: &mut T) -> Result<usize, std::io::Error> {
+    /// Try to read the exact *missing* number of bytes from the given reader. This uses the 
+    /// `Read::red_exact` function and will block until the reader has provided the missing number
+    /// of bytes, or an io error occurs. 
+    pub fn read_exact_from<T: Read>(&mut self, read: &mut T) -> std::io::Result<()> {
+        let missing = self.expected_missing();
+        read.read_exact(&mut self.buf[self.write_index..self.expected_len])?;
+        self.write_index += missing;
+        Ok(())
+    }
+
+    /// Write all remaining bytes to the given writer. This can write less than the remaining 
+    /// number of bytes, depending on the writer.
+    pub fn write_to<T: Write>(&mut self, write: &mut T) -> std::io::Result<usize> {
         let bytes_written = write.write(self.as_slice())?;
         self.read_index += bytes_written;
         Ok(bytes_written)
+    }
+
+    pub fn write_all_to<T: Write>(&mut self, write: &mut T) -> std::io::Result<()> {
+        let remaining = self.remaining();
+        write.write_all(self.as_slice())?;
+        self.read_index += remaining;
+        Ok(())
     }
 
     /// Get the used buffer as a slice, starting at the current read index. This does not advance
@@ -293,7 +313,7 @@ impl RwBuffer {
 }
 
 impl Write for RwBuffer {
-    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         self.put_slice(buf);
         Ok(buf.len())
     }

@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use crate::*;
 
 #[test]
@@ -75,4 +77,61 @@ fn test_rwbuffer_put_get_types() {
     assert_eq!(buf.get_f64().unwrap(), 0.2);
 
     assert_eq!(buf.remaining(), 0);
+}
+
+#[test]
+fn test_rwbuffer_read_from() {
+    let input: &[u8] = &[5, 12, 56, 84, 1, 57];
+    let mut input = Cursor::new(input);
+
+    // Fresh buffer without expecting any bytes
+    let mut buf = RwBuffer::new();
+
+    // Since no bytes are expected, the read should not read anything
+    let bytes_read = buf.read_from(&mut input).unwrap();
+    assert_eq!(buf.remaining(), 0);
+    assert_eq!(bytes_read, 0);
+
+    // Expect one byte
+    buf.set_expected(1);
+
+    // One byte is expected, so one byte should be read
+    let bytes_read = buf.read_from(&mut input).unwrap();
+    assert_eq!(buf.remaining(), 1);
+    assert_eq!(bytes_read, 1);
+    assert_eq!(buf.as_slice()[0], 5);
+
+    // Since the expected number of bytes is already read, the read should not read anything
+    let bytes_read = buf.read_from(&mut input).unwrap();
+    assert_eq!(buf.remaining(), 1);
+    assert_eq!(bytes_read, 0);
+
+    let len = buf.get_u8().unwrap();
+    assert_eq!(len, 5);
+    assert_eq!(buf.remaining(), 0);
+
+    buf.set_expected(1 + len as usize);
+    assert_eq!(buf.expected_missing(), 5);
+
+    let bytes_read = buf.read_from(&mut input).unwrap();
+    assert_eq!(buf.remaining(), 5);
+    assert_eq!(bytes_read, 5);
+
+    assert_eq!(buf.as_slice(), &[12, 56, 84, 1, 57]);
+}
+
+#[test]
+fn test_rwbuffer_write_to() {
+    let mut output = Vec::<u8>::new();
+
+    let mut buf = RwBuffer::new();
+    buf.put_slice(&[5, 12, 56, 84, 1, 57]);
+    assert_eq!(buf.remaining(), 6);
+    assert_eq!(buf.as_slice(), &[5, 12, 56, 84, 1, 57]);
+
+    let bytes_written = buf.write_to(&mut output).unwrap();
+    assert_eq!(bytes_written, 6);
+    assert_eq!(buf.remaining(), 0);
+
+    assert_eq!(output.as_slice(), &[5, 12, 56, 84, 1, 57]);
 }
