@@ -52,6 +52,46 @@ pub trait RwBufferExt {
         self.put_slice(&val.to_be_bytes());
     }
 
+    fn put_u16_le(&mut self, val: u16) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
+    fn put_u32_le(&mut self, val: u32) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
+    fn put_u64_le(&mut self, val: u64) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
+    fn put_u128_le(&mut self, val: u128) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
+    fn put_i16_le(&mut self, val: i16) {
+        self.put_u16_le(val as u16);
+    }
+
+    fn put_i32_le(&mut self, val: i32) {
+        self.put_u32_le(val as u32);
+    }
+
+    fn put_i64_le(&mut self, val: i64) {
+        self.put_u64_le(val as u64);
+    }
+
+    fn put_i128_le(&mut self, val: i128) {
+        self.put_u128_le(val as u128);
+    }
+
+    fn put_f32_le(&mut self, val: f32) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
+    fn put_f64_le(&mut self, val: f64) {
+        self.put_slice(&val.to_le_bytes());
+    }
+
     fn put_slice(&mut self, val: &[u8]);
 
     fn get_u8(&mut self) -> Option<u8> {
@@ -114,6 +154,58 @@ pub trait RwBufferExt {
         let mut buf = [0; 8];
         self.copy_to_slice(&mut buf)?;
         Some(f64::from_be_bytes(buf))
+    }
+
+    fn get_u16_le(&mut self) -> Option<u16> {
+        let mut buf = [0; 2];
+        self.copy_to_slice(&mut buf)?;
+        Some(u16::from_le_bytes(buf))
+    }
+
+    fn get_u32_le(&mut self) -> Option<u32> {
+        let mut buf = [0; 4];
+        self.copy_to_slice(&mut buf)?;
+        Some(u32::from_le_bytes(buf))
+    }
+
+    fn get_u64_le(&mut self) -> Option<u64> {
+        let mut buf = [0; 8];
+        self.copy_to_slice(&mut buf)?;
+        Some(u64::from_le_bytes(buf))
+    }
+
+    fn get_u128_le(&mut self) -> Option<u128> {
+        let mut buf = [0; 16];
+        self.copy_to_slice(&mut buf)?;
+        Some(u128::from_le_bytes(buf))
+    }
+
+    fn get_i16_le(&mut self) -> Option<i16> {
+        self.get_u16_le().map(|it| it as i16)
+    }
+
+    fn get_i32_le(&mut self) -> Option<i32> {
+        self.get_u32_le().map(|it| it as i32)
+    }
+
+    fn get_i64_le(&mut self) -> Option<i64> {
+        self.get_u64_le().map(|it| it as i64)
+    }
+
+    fn get_i128_le(&mut self) -> Option<i128> {
+        self.get_u128_le().map(|it| it as i128)
+    }
+
+    fn get_f32_le(&mut self) -> Option<f32> {
+        let mut buf = [0; 4];
+        self.copy_to_slice(&mut buf)?;
+        Some(f32::from_le_bytes(buf))
+    }
+
+    fn get_f64_le(&mut self) -> Option<f64> {
+        let mut buf = [0; 8];
+        self.copy_to_slice(&mut buf)?;
+        Some(f64::from_le_bytes(buf))
     }
 
     fn get_str_zero_terminated(&mut self) -> Option<String> {
@@ -266,7 +358,7 @@ impl RwBuffer {
         self.read_index = 0;
     }
 
-    /// Try to read *missing* number of bytes from the given reader. This can read less than the 
+    /// Try to read *missing* number of bytes from the given reader. This can read less than the
     /// missing number of bytes.
     pub fn read_from<T: Read>(&mut self, read: &mut T) -> std::io::Result<usize> {
         let bytes_read = read.read(&mut self.buf[self.write_index..self.expected_len])?;
@@ -274,9 +366,9 @@ impl RwBuffer {
         Ok(bytes_read)
     }
 
-    /// Try to read the exact *missing* number of bytes from the given reader. This uses the 
+    /// Try to read the exact *missing* number of bytes from the given reader. This uses the
     /// `Read::red_exact` function and will block until the reader has provided the missing number
-    /// of bytes, or an io error occurs. 
+    /// of bytes, or an io error occurs.
     pub fn read_exact_from<T: Read>(&mut self, read: &mut T) -> std::io::Result<()> {
         let missing = self.expected_missing();
         read.read_exact(&mut self.buf[self.write_index..self.expected_len])?;
@@ -284,7 +376,7 @@ impl RwBuffer {
         Ok(())
     }
 
-    /// Write all remaining bytes to the given writer. This can write less than the remaining 
+    /// Write all remaining bytes to the given writer. This can write less than the remaining
     /// number of bytes, depending on the writer.
     pub fn write_to<T: Write>(&mut self, write: &mut T) -> std::io::Result<usize> {
         let bytes_written = write.write(self.as_slice())?;
